@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SqFt Markup Calculator</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f3f3f3;
+      min-height: 100vh;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .calculator {
+      width: 100%;
+      max-width: 500px;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+    }
+
+    h1 {
+      margin: 0 0 20px;
+      text-align: center;
+      font-size: 28px;
+    }
+
+    .item {
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #eeeeee;
+    }
+
+    .item:last-of-type {
+      border-bottom: none;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    input,
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 18px;
+      border-radius: 12px;
+      border: 1px solid #cccccc;
+    }
+
+    input:disabled {
+      background: #eeeeee;
+      color: #888888;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      color: #444444;
+      font-size: 15px;
+    }
+
+    .toggle-row input {
+      width: auto;
+      transform: scale(1.25);
+    }
+
+    button {
+      margin-top: 12px;
+      background: #111111;
+      color: #ffffff;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .results {
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 2px solid #dddddd;
+      font-size: 18px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 12px 0;
+    }
+
+    .big {
+      font-size: 23px;
+      font-weight: bold;
+    }
+
+    .note {
+      margin-top: 14px;
+      text-align: center;
+      color: #666666;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator">
+    <h1>SqFt Markup Calculator</h1>
+
+    <div class="item">
+      <label for="sqft">Square Feet</label>
+      <input id="sqft" type="number" step="0.01" value="1" />
+    </div>
+
+    <div class="item">
+      <label for="costPerSqft">Cost Per SqFt</label>
+      <input id="costPerSqft" type="number" step="0.01" value="0" />
+      <div class="toggle-row">
+        <input id="useCostPerSqft" type="checkbox" checked />
+        <span>Include cost per sqft</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <label for="taxPercent">Tax Percentage</label>
+      <input id="taxPercent" type="number" step="0.01" value="7.5" />
+      <div class="toggle-row">
+        <input id="useTaxPercent" type="checkbox" checked />
+        <span>Include tax</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <label for="shipping">Shipping</label>
+      <input id="shipping" type="number" step="0.01" value="100" />
+      <div class="toggle-row">
+        <input id="useShipping" type="checkbox" checked />
+        <span>Include shipping</span>
+      </div>
+    </div>
+
+    <div class="item">
+      <label for="markupPercent">Markup Percentage</label>
+      <input id="markupPercent" type="number" step="0.01" value="40" />
+      <div class="toggle-row">
+        <input id="useMarkupPercent" type="checkbox" checked />
+        <span>Apply markup</span>
+      </div>
+    </div>
+
+    <button onclick="calculate()">Calculate</button>
+
+    <div class="results">
+      <div class="row">
+        <span>Material Subtotal:</span>
+        <strong id="materialSubtotal">$0.00</strong>
+      </div>
+
+      <div class="row">
+        <span>Tax Amount:</span>
+        <strong id="taxAmount">$0.00</strong>
+      </div>
+
+      <div class="row">
+        <span>Shipping:</span>
+        <strong id="shippingAmount">$0.00</strong>
+      </div>
+
+      <div class="row">
+        <span>Total Cost:</span>
+        <strong id="totalCost">$0.00</strong>
+      </div>
+
+      <div class="row">
+        <span>Markup Amount:</span>
+        <strong id="markupAmount">$0.00</strong>
+      </div>
+
+      <div class="row big">
+        <span>Selling Price:</span>
+        <span id="sellingPrice">$0.00</span>
+      </div>
+
+      <div class="row">
+        <span>Selling Price Per SqFt:</span>
+        <strong id="sellingPerSqft">$0.00/sqft</strong>
+      </div>
+    </div>
+
+    <div class="note">
+      Defaults: sqft 1, tax 7.5%, shipping $100, markup 40%.
+    </div>
+  </div>
+
+  <script>
+    function getNumber(id) {
+      const value = parseFloat(document.getElementById(id).value);
+      return isNaN(value) ? 0 : value;
+    }
+
+    function isOn(id) {
+      return document.getElementById(id).checked;
+    }
+
+    function money(value) {
+      return "$" + Number(value).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function updateDisabledStates() {
+      document.getElementById("costPerSqft").disabled = !isOn("useCostPerSqft");
+      document.getElementById("taxPercent").disabled = !isOn("useTaxPercent");
+      document.getElementById("shipping").disabled = !isOn("useShipping");
+      document.getElementById("markupPercent").disabled = !isOn("useMarkupPercent");
+    }
+
+    function calculate() {
+      updateDisabledStates();
+
+      const sqft = getNumber("sqft");
+      const costPerSqft = isOn("useCostPerSqft") ? getNumber("costPerSqft") : 0;
+      const taxPercent = isOn("useTaxPercent") ? getNumber("taxPercent") : 0;
+      const shipping = isOn("useShipping") ? getNumber("shipping") : 0;
+      const markupPercent = isOn("useMarkupPercent") ? getNumber("markupPercent") : 0;
+
+      const materialSubtotal = sqft * costPerSqft;
+      const taxAmount = materialSubtotal * (taxPercent / 100);
+      const totalCost = materialSubtotal + taxAmount + shipping;
+      const markupAmount = totalCost * (markupPercent / 100);
+      const sellingPrice = totalCost + markupAmount;
+      const sellingPerSqft = sqft > 0 ? sellingPrice / sqft : 0;
+
+      document.getElementById("materialSubtotal").textContent = money(materialSubtotal);
+      document.getElementById("taxAmount").textContent = money(taxAmount);
+      document.getElementById("shippingAmount").textContent = money(shipping);
+      document.getElementById("totalCost").textContent = money(totalCost);
+      document.getElementById("markupAmount").textContent = money(markupAmount);
+      document.getElementById("sellingPrice").textContent = money(sellingPrice);
+      document.getElementById("sellingPerSqft").textContent = money(sellingPerSqft) + "/sqft";
+    }
+
+    [
+      "sqft",
+      "costPerSqft",
+      "taxPercent",
+      "shipping",
+      "markupPercent",
+      "useCostPerSqft",
+      "useTaxPercent",
+      "useShipping",
+      "useMarkupPercent"
+    ].forEach(function(id) {
+      document.getElementById(id).addEventListener("input", calculate);
+      document.getElementById(id).addEventListener("change", calculate);
+    });
+
+    calculate();
+  </script>
+</body>
+</html>
